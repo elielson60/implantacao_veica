@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard ERP Veica — Martins Rent a Car</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0c0e12; --panel:#14171d; --panel2:#191d24; --border:#242a33;
+    --text:#e8ecf1; --muted:#8b95a3; --dim:#5c6673;
+    --green:#3fd68f; --amber:#f5b73d; --red:#f4655f; --blue:#5aa7f0; --purple:#9d8cf0;
+    --mono:'JetBrains Mono',ui-monospace,'Cascadia Code',Consolas,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,'Segoe UI',Roboto,sans-serif;padding:28px 32px 60px;min-height:100vh}
+  .topbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:8px}
+  h1{font-size:21px;font-weight:650;letter-spacing:-.02em}
+  h1 span{color:var(--dim);font-weight:450}
+  .meta{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .pill{display:inline-flex;align-items:center;gap:7px;background:rgba(245,183,61,.1);border:1px solid rgba(245,183,61,.35);color:var(--amber);padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600}
+  .pill::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);animation:pulse 2s infinite}
+  @keyframes pulse{50%{opacity:.4}}
+  .progress-hero{margin:18px 0 26px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:22px 26px}
+  .progress-hero .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+  .progress-hero .pct{font-family:var(--mono);font-size:34px;font-weight:700;color:var(--text)}
+  .progress-hero .pct small{font-size:13px;color:var(--muted);font-weight:400;margin-left:8px}
+  .progress-hero .deadline{font-family:var(--mono);font-size:13px;color:var(--muted);text-align:right;line-height:1.7}
+  .progress-hero .deadline b{color:var(--amber)}
+  .track{height:14px;background:var(--panel2);border-radius:999px;overflow:hidden;position:relative}
+  .fill{height:100%;width:37%;border-radius:999px;background:linear-gradient(90deg,var(--green),var(--amber));position:relative;animation:grow 1.2s ease-out}
+  @keyframes grow{from{width:0}}
+  .marker{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--dim)}
+  .marker::after{content:attr(data-l);position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;color:var(--dim);white-space:nowrap}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:26px}
+  .kpi{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+  .kpi .v{font-family:var(--mono);font-size:26px;font-weight:700;line-height:1.1}
+  .kpi .l{font-size:11.5px;color:var(--muted);margin-top:6px;letter-spacing:.02em}
+  .kpi .s{font-family:var(--mono);font-size:11px;margin-top:3px}
+  .g{color:var(--green)} .a{color:var(--amber)} .r{color:var(--red)} .b{color:var(--blue)} .p{color:var(--purple)}
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px 22px 16px}
+  .card h2{font-size:13.5px;font-weight:600;color:var(--text);margin-bottom:2px}
+  .card .sub{font-size:11.5px;color:var(--muted);margin-bottom:14px}
+  .c12{grid-column:span 12}.c8{grid-column:span 8}.c7{grid-column:span 7}.c6{grid-column:span 6}.c5{grid-column:span 5}.c4{grid-column:span 4}
+  .chart-lg{height:320px}.chart-md{height:260px}.chart-sm{height:230px}
+  canvas{max-width:100%}
+  .legend-note{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:10px}
+  footer{margin-top:30px;font-family:var(--mono);font-size:11px;color:var(--dim);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+  .ins-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:18px}
+  .ins{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:13px 15px}
+  .ins .iv{font-family:var(--mono);font-size:21px;font-weight:700}
+  .ins .iv span{font-size:14px;color:var(--dim);font-weight:500}
+  .ins .il{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.35}
+  .ins .is{font-family:var(--mono);font-size:10px;margin-top:3px}
+  .cp-wrap{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:14px;overflow-x:auto}
+  .cp-title{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--muted);margin-bottom:14px}
+  .cp-title span{color:var(--dim);letter-spacing:0}
+  .cp-chain{display:flex;align-items:stretch;gap:8px;min-width:720px}
+  .cp-node{flex:1;background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:8px;padding:10px 12px;font-size:11.5px;line-height:1.4}
+  .cp-node b{font-family:var(--mono);color:var(--text)}
+  .cp-node em{display:block;font-style:normal;font-family:var(--mono);font-size:9.5px;color:var(--muted);margin-top:4px}
+  .cp-node.hot{border-left-color:var(--red);background:rgba(244,101,95,.06)}
+  .cp-node.warn{border-left-color:var(--amber)}
+  .cp-node.ext{border-left-color:var(--purple)}
+  .cp-node.goal{border-left-color:var(--green);background:rgba(63,214,143,.06)}
+  .cp-arrow{align-self:center;color:var(--dim);font-size:16px}
+  .blk-grid{display:grid;gap:8px}
+  .blk{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px;color:#c6cdd6;line-height:1.5}
+  .blk b{font-family:var(--mono)}
+  .tag{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:99px;margin-right:6px}
+  .tag.r{background:rgba(244,101,95,.12);color:var(--red);border:1px solid rgba(244,101,95,.3)}
+  .tag.a{background:rgba(245,183,61,.1);color:var(--amber);border:1px solid rgba(245,183,61,.3)}
+  @media(max-width:900px){.cp-chain{min-width:640px}}
+  @media(max-width:900px){.c8,.c7,.c6,.c5,.c4{grid-column:span 12}.chart-lg{height:260px}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>Implantação ERP Veica <span>/ Martins Rent a Car</span></h1>
+    <div class="meta">Análise de andamento · dados atualizados em 02/07/2026 (v5 — encerramento reprogramado p/ 15/09)</div>
+  </div>
+  <div class="pill">ATENÇÃO — cronograma sob pressão</div>
+</div>
+
+<div class="progress-hero">
+  <div class="row">
+    <div class="pct">~38%<small>concluído (estimado) · 16% ponderado por duração · 23% por tarefas</small></div>
+    <div class="deadline">GO LIVE: <b>30/07/2026</b> · faltam <b>28 dias</b><br>Encerramento: <b>15/09/2026</b> · faltam 75 dias (+27d vs. plano anterior)</div>
+  </div>
+  <div class="track">
+    <div class="fill"></div>
+    <div class="marker" style="left:63%" data-l="Go Live 30/07"></div>
+    <div class="marker" style="left:97%" data-l="Fim 15/09"></div>
+  </div>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="v">43</div><div class="l">Tarefas totais</div><div class="s" style="color:var(--dim)">2 marcos principais</div></div>
+  <div class="kpi"><div class="v g">10</div><div class="l">Concluídas</div><div class="s g">+1 antecipada (#18)</div></div>
+  <div class="kpi"><div class="v b">27</div><div class="l">Em andamento</div><div class="s b">63% do backlog</div></div>
+  <div class="kpi"><div class="v" style="color:var(--dim)">6</div><div class="l">Não iniciadas</div><div class="s" style="color:var(--dim)">início futuro</div></div>
+  <div class="kpi"><div class="v r">3</div><div class="l">Atrasadas</div><div class="s r">25 dias acum. · todas Pneus</div></div>
+  <div class="kpi"><div class="v a">20</div><div class="l">Vencem em 7 dias</div><div class="s a">47% do projeto</div></div>
+</div>
+
+<div class="grid">
+
+  <div class="card c12" style="border-color:rgba(245,183,61,.3)">
+    <h2>Insights de Cronograma — Vamos entregar no prazo?</h2>
+    <div class="sub">SPI 0,80 · o projeto entrega 80% do que planeja por período — recuperação depende da semana 06–12/07</div>
+
+    <div class="ins-grid">
+      <div class="ins"><div class="iv a">0,80</div><div class="il">SPI — Eficiência do cronograma</div><div class="is r">abaixo de 0,90 = risco</div></div>
+      <div class="ins"><div class="iv r">−4,0 p.p.</div><div class="il">Desvio (PV 19,9% → EV 16,0%)</div><div class="is" style="color:var(--dim)">planejado × realizado</div></div>
+      <div class="ins"><div class="iv">28<span> / 75</span></div><div class="il">Dias p/ Go Live / término</div><div class="is a">30/07 · 15/09 (+27d)</div></div>
+      <div class="ins"><div class="iv r">25d</div><div class="il">Atraso acumulado</div><div class="is r">100% no módulo Pneus</div></div>
+      <div class="ins"><div class="iv r">3</div><div class="il">Vencidas</div><div class="is r">#24 (10d) · #25 (9d) · #23 (6d)</div></div>
+      <div class="ins"><div class="iv a">4 · 20 · 26</div><div class="il">Vencem em 3 / 7 / 15 dias</div><div class="is a">47% do projeto em 7 dias</div></div>
+      <div class="ins"><div class="iv b">75%</div><div class="il">Aderência ao plano</div><div class="is" style="color:var(--dim)">9 de 12 previstas entregues</div></div>
+      <div class="ins"><div class="iv g">~17d</div><div class="il">Folga da cadeia crítica</div><div class="is a">#40 é externa — sem controle</div></div>
+    </div>
+
+    <div class="cp-wrap">
+      <div class="cp-title">CAMINHO CRÍTICO ATÉ O GO LIVE <span>(inferido — planilha sem predecessoras)</span></div>
+      <div class="cp-chain">
+        <div class="cp-node hot"><b>#39</b> Importação de Dados<em>vence HOJE · Elielson</em></div>
+        <div class="cp-arrow">→</div>
+        <div class="cp-node"><b>#35</b> Integração Bancária<em>09/07 · Elielson + Marcia</em></div>
+        <div class="cp-arrow">→</div>
+        <div class="cp-node"><b>#37</b> Homolog. Bancária<em>09/07 · em paralelo com #35</em></div>
+        <div class="cp-arrow">→</div>
+        <div class="cp-node ext"><b>#40</b> Fiscal — NFe<em>13/07 · Escritório Brasil (externa)</em></div>
+        <div class="cp-arrow">→</div>
+        <div class="cp-node goal"><b>#42</b> GO LIVE<em>30/07</em></div>
+      </div>
+    </div>
+
+    <div class="blk-grid">
+      <div class="blk"><span class="tag r">Bloqueio</span> <b>#25</b> travada por <b>#24</b> — relatórios de Pneus dependem dos cadastros (10 dias atrasados)</div>
+      <div class="blk"><span class="tag a">Atenção</span> <b>#35</b> e <b>#37</b> terminam no mesmo dia (09/07) — homologação sem folga sobre a integração; qualquer deslize em #35 empurra as duas</div>
+      <div class="blk"><span class="tag a">Mudança de baseline</span> <b>#43</b> Finalização reprogramada para 19/08→15/09 — sequência corrigida, mas o encerramento do projeto foi estendido em <b>+27 dias</b></div>
+    </div>
+  </div>
+
+  <div class="card c8">
+    <h2>Curva S — Evolução Planejado × Realizado</h2>
+    <div class="sub">% acumulado do projeto ponderado por duração das tarefas</div>
+    <div class="chart-lg"><canvas id="scurve"></canvas></div>
+    <div class="legend-note">▲ Gap atual de ~2 p.p. sobre o planejado até hoje. Após o replanejamento, o planejado salta de 19% → 69% entre 02/07 e 13/07: é a quinzena decisiva do projeto.</div>
+  </div>
+
+  <div class="card c4">
+    <h2>Distribuição de Status</h2>
+    <div class="sub">43 tarefas do cronograma</div>
+    <div class="chart-lg"><canvas id="donut"></canvas></div>
+  </div>
+
+  <div class="card c6">
+    <h2>Entregas por Semana</h2>
+    <div class="sub">Tarefas pendentes por semana de vencimento — replanejamento empilhou 19 entregas na semana 06–12/07</div>
+    <div class="chart-md"><canvas id="weeks"></canvas></div>
+  </div>
+
+  <div class="card c6">
+    <h2>Tarefas Atrasadas</h2>
+    <div class="sub">Dias de atraso em 02/07 — Financeiro foi replanejado; restou o módulo Pneus (100% com Henrique)</div>
+    <div class="chart-md"><canvas id="delays"></canvas></div>
+  </div>
+
+  <div class="card c7">
+    <h2>Carga por Responsável</h2>
+    <div class="sub">Tarefas pendentes e atrasadas — Henrique segue como gargalo (13 pendentes, 3 atrasadas)</div>
+    <div class="chart-md"><canvas id="load"></canvas></div>
+  </div>
+
+  <div class="card c5">
+    <h2>Saúde do Projeto</h2>
+    <div class="sub">Nota geral: 64/100 — 🟡 Atenção</div>
+    <div class="chart-md"><canvas id="radar"></canvas></div>
+  </div>
+
+  <div class="card c12">
+    <h2>Linha do Tempo — Caminho Crítico do Go Live</h2>
+    <div class="sub">Tarefas que condicionam o Go Live de 30/07 · linha vertical = hoje (02/07)</div>
+    <div class="chart-lg"><canvas id="gantt"></canvas></div>
+    <div class="legend-note">Cadeia sem folga: Importação de Dados → Homologação Bancária → Fiscal/NFe → GO LIVE. Qualquer deslize desloca o marco.</div>
+  </div>
+
+</div>
+
+<footer>
+  <span>Fonte: Cronograma - Veica Tecnologia.xlsx · aba ERP - VEICA</span>
+  <span>Elielson Nascimento · TI Grupo Martins</span>
+</footer>
+
+<script>
+const C = {green:'#3fd68f',amber:'#f5b73d',red:'#f4655f',blue:'#5aa7f0',purple:'#9d8cf0',dim:'#5c6673',grid:'rgba(139,149,163,.12)',text:'#8b95a3'};
+Chart.defaults.color = C.text;
+Chart.defaults.font.family = "'Inter',sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.borderColor = C.grid;
+
+// ---- Curva S ----
+const labels = ['11/05','18/05','25/05','01/06','08/06','15/06','22/06','29/06','02/07','06/07','13/07','20/07','27/07','03/08','10/08','17/08','24/08','31/08','07/09','14/09','21/09'];
+const plan  = [0,0,2.3,4.9,5.1,5.1,7.4,15.1,20.0,28.6,68.6,78.6,90.0,90.0,90.0,90.0,94.3,94.3,94.3,94.3,100];
+const real  = [0,0,2.3,4.9,5.1,5.1,6.9,8.3,16.0,null,null,null,null,null,null,null,null,null,null,null,null];
+new Chart(scurve,{type:'line',data:{labels,datasets:[
+  {label:'Planejado',data:plan,borderColor:C.dim,borderDash:[6,4],pointRadius:0,tension:.35,fill:false,borderWidth:2},
+  {label:'Realizado',data:real,borderColor:C.green,backgroundColor:'rgba(63,214,143,.12)',pointRadius:3,pointBackgroundColor:C.green,tension:.35,fill:true,borderWidth:2.5}
+]},options:{maintainAspectRatio:false,plugins:{legend:{position:'top',align:'end',labels:{boxWidth:10,boxHeight:10,usePointStyle:true}},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.raw}%`}}},
+scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}}}});
+
+// ---- Donut ----
+new Chart(donut,{type:'doughnut',data:{labels:['Concluídas','Em andamento','Não iniciadas','Atrasadas'],datasets:[{data:[10,24,6,3],backgroundColor:[C.green,C.blue,C.dim,C.red],borderColor:'#14171d',borderWidth:3,hoverOffset:6}]},
+options:{maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{boxWidth:10,boxHeight:10,usePointStyle:true,padding:14}}}},
+plugins:[{id:'center',afterDraw(c){const{ctx,chartArea:a}=c;ctx.save();ctx.textAlign='center';ctx.font="700 26px 'JetBrains Mono',monospace";ctx.fillStyle='#e8ecf1';ctx.fillText('43',(a.left+a.right)/2,(a.top+a.bottom)/2-2);ctx.font="11px 'Inter',sans-serif";ctx.fillStyle=C.text;ctx.fillText('tarefas',(a.left+a.right)/2,(a.top+a.bottom)/2+16);ctx.restore();}}]});
+
+// ---- Entregas por semana ----
+const wk = ['22/06','29/06','06/07','13/07','20/07','27/07','10/08','17/08'];
+const wkv = [3,4,19,3,1,1,1,1];
+new Chart(weeks,{type:'bar',data:{labels:wk,datasets:[{data:wkv,backgroundColor:wkv.map(v=>v>=10?C.red:v>=5?C.amber:'rgba(90,167,240,.75)'),borderRadius:5,maxBarThickness:36}]},
+options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.raw} entregas`}}},scales:{y:{ticks:{stepSize:5}},x:{grid:{display:false}}}}});
+
+// ---- Atrasos ----
+new Chart(delays,{type:'bar',data:{
+labels:['#24 Pneu — Cadastros','#25 Pneu — Relatórios','#23 Pneu — Orçamento equip.'],
+datasets:[{data:[10,9,6],backgroundColor:[C.red,'#f5813d',C.amber],borderRadius:5,maxBarThickness:26}]},
+options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.raw} dias de atraso`}}},
+scales:{x:{ticks:{callback:v=>v+'d'}},y:{grid:{display:false},ticks:{font:{size:10.5}}}}}});
+
+// ---- Carga por responsável ----
+new Chart(load,{type:'bar',data:{
+labels:['Henrique','Marcia L.','Vinicius','João V.','Elielson','Anna','Saullo','Eduardo','Jozenir','Fátima'],
+datasets:[
+ {label:'No prazo',data:[10,9,5,5,4,4,3,2,2,2],backgroundColor:'rgba(90,167,240,.75)',borderRadius:4,maxBarThickness:26},
+ {label:'Atrasadas',data:[3,0,1,0,0,0,1,0,0,0],backgroundColor:C.red,borderRadius:4,maxBarThickness:26}
+]},options:{maintainAspectRatio:false,plugins:{legend:{position:'top',align:'end',labels:{boxWidth:10,boxHeight:10,usePointStyle:true}}},
+scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,ticks:{stepSize:3}}}}});
+
+// ---- Radar saúde ----
+new Chart(radar,{type:'radar',data:{labels:['Cronograma','Escopo','Produtividade','Execução','Organização','Comunicação','Planejamento'],
+datasets:[{label:'Nota',data:[64,78,66,66,56,60,52],backgroundColor:'rgba(157,140,240,.18)',borderColor:C.purple,pointBackgroundColor:C.purple,pointRadius:3,borderWidth:2}]},
+options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{r:{min:0,max:100,ticks:{stepSize:25,backdropColor:'transparent',color:C.dim,font:{size:9}},grid:{color:C.grid},angleLines:{color:C.grid},pointLabels:{font:{size:11},color:'#c6cdd6'}}}}});
+
+// ---- Gantt caminho crítico ----
+const day0 = new Date(2026,5,15); // 15/06
+const D = s=>{const[d,m]=s.split('/');return (new Date(2026,m-1,d)-day0)/864e5};
+const gTasks = [
+ {n:'#39 Importação de Dados',i:'20/06',f:'02/07',c:C.amber},
+ {n:'#35 Integração Bancária',i:'29/06',f:'09/07',c:C.blue},
+ {n:'#37 Homolog. Bancária',i:'03/07',f:'09/07',c:C.blue},
+ {n:'#41 Integração Contábil',i:'29/06',f:'10/07',c:C.blue},
+ {n:'#40 Fiscal — NFe',i:'07/07',f:'13/07',c:C.purple},
+ {n:'#28 Trein. C. Receber',i:'26/06',f:'07/07',c:C.blue},
+ {n:'#26/27 Contas a Pagar (replan.)',i:'27/06',f:'07/07',c:C.amber},
+ {n:'#16 Compras — Aprovação',i:'07/07',f:'20/07',c:C.blue},
+ {n:'#5 Cancelamento Omie',i:'02/06',f:'27/07',c:C.dim},
+ {n:'#42 GO LIVE',i:'30/07',f:'19/08',c:C.green},
+ {n:'#43 Finalização (replan.)',i:'19/08',f:'15/09',c:C.dim},
+];
+new Chart(gantt,{type:'bar',data:{labels:gTasks.map(t=>t.n),
+datasets:[{data:gTasks.map(t=>[D(t.i),D(t.f)+0.6]),backgroundColor:gTasks.map(t=>t.c+'cc'),borderColor:gTasks.map(t=>t.c),borderWidth:1,borderRadius:5,borderSkipped:false,maxBarThickness:16}]},
+options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false},
+tooltip:{callbacks:{label:c=>{const t=gTasks[c.dataIndex];return ` ${t.i} → ${t.f}`;}}}},
+scales:{x:{min:D('01/06')-14,max:D('21/09'),ticks:{stepSize:7,callback:v=>{const d=new Date(day0.getTime()+v*864e5);return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`}},grid:{color:C.grid}},
+y:{grid:{display:false},ticks:{font:{size:10.5},color:'#c6cdd6'}}}},
+plugins:[{id:'today',afterDraw(c){const x=c.scales.x.getPixelForValue(D('02/07'));const{top,bottom}=c.chartArea;const ctx=c.ctx;ctx.save();ctx.strokeStyle=C.red;ctx.setLineDash([5,4]);ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,bottom);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.red;ctx.font="600 10px 'JetBrains Mono',monospace";ctx.fillText('HOJE 02/07',x+6,top+12);ctx.restore();}}]});
+</script>
+</body>
+</html>
